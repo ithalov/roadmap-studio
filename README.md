@@ -6,7 +6,7 @@
 ![Tauri](https://img.shields.io/badge/tauri-2.x-24C8DB)
 ![React](https://img.shields.io/badge/react-19-61DAFB)
 ![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-BSL-green)
 
 Roadmap Studio is a local-first desktop application for professional roadmap planning.
 It is built with Tauri 2, React, TypeScript, SQLite, and a release pipeline prepared for
