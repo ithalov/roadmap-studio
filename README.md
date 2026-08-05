@@ -1,6 +1,6 @@
 # Roadmap Studio
 
-![Version](https://img.shields.io/badge/version-0.1.3-blue)
+![Version](https://img.shields.io/badge/version-0.1.5-blue)
 ![Release](https://img.shields.io/github/v/release/ithalov/roadmap-studio)
 ![Workflow](https://img.shields.io/github/actions/workflow/status/ithalov/roadmap-studio/release.yml?branch=main)
 ![Tauri](https://img.shields.io/badge/tauri-2.x-24C8DB)

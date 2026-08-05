@@ -40,8 +40,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Roadmap Studio ${{ github.ref_name }}
-          releaseBody: Atualizacao do Roadmap Studio.
+          releaseName: Roadmap Studio ${{ replace(github.ref_name, 'v', '') }}
+          releaseBody: Atualizacao do Roadmap Studio ${{ replace(github.ref_name, 'v', '') }}.
           releaseDraft: false
           prerelease: false
           args: ''
