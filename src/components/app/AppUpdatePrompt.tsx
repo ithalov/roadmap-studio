@@ -17,6 +17,7 @@ export function AppUpdatePrompt() {
   const [downloaded, setDownloaded] = useState(0);
   const [total, setTotal] = useState(0);
   const [message, setMessage] = useState('');
+  const [failure, setFailure] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -59,6 +60,7 @@ export function AppUpdatePrompt() {
     setProgress(0);
     setDownloaded(0);
     setTotal(0);
+    setFailure(null);
     setMessage('Baixando atualizacao...');
 
     try {
@@ -92,7 +94,7 @@ export function AppUpdatePrompt() {
       await relaunch();
     } catch (error) {
       logger.log('ERROR', 'Update installation failed', { error });
-      setMessage(error instanceof Error ? error.message : 'Nao foi possivel atualizar o aplicativo.');
+      setFailure(error instanceof Error ? error.message : 'Nao foi possivel atualizar o aplicativo.');
       setDownloading(false);
     }
   };
@@ -138,6 +140,12 @@ export function AppUpdatePrompt() {
                   {downloaded}/{total} bytes
                 </p>
               ) : null}
+            </div>
+          ) : null}
+
+          {failure ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {failure}
             </div>
           ) : null}
 

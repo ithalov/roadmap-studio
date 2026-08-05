@@ -53,10 +53,10 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart('v')
-          $bundle = Get-ChildItem "src-tauri/target/release/bundle/nsis" -Filter "*_x64-setup.exe" | Select-Object -First 1
+          $bundle = Get-ChildItem "src-tauri/target/release/bundle/msi" -Filter "*.msi.zip" | Select-Object -First 1
 
           if (-not $bundle) {
-            throw "NSIS installer not found."
+            throw "MSI updater bundle not found."
           }
 
           $signaturePath = "$($bundle.FullName).sig"
