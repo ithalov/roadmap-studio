@@ -32,6 +32,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare release metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "release_name=Roadmap Studio $version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Build and create GitHub release
         uses: tauri-apps/tauri-action@v1
         env:
@@ -40,8 +49,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Roadmap Studio ${{ replace(github.ref_name, 'v', '') }}
-          releaseBody: Atualizacao do Roadmap Studio ${{ replace(github.ref_name, 'v', '') }}.
+          releaseName: ${{ steps.meta.outputs.release_name }}
+          releaseBody: Atualizacao do Roadmap Studio ${{ steps.meta.outputs.version }}.
           releaseDraft: false
           prerelease: false
           args: ''
