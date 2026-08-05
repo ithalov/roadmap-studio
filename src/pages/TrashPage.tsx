@@ -5,9 +5,11 @@ import {
   useDeletedRoadmaps,
   useRoadmapActions,
 } from '@/features/roadmap-management/hooks/useRoadmaps';
+import { useToast } from '@/components/feedback/useToast';
 export function TrashPage() {
   const result = useDeletedRoadmaps();
   const actions = useRoadmapActions();
+  const toast = useToast();
   return (
     <PagePlaceholder
       title="Lixeira"
@@ -26,20 +28,33 @@ export function TrashPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => actions.restoreDeleted.mutate(item.id)}>
+                <Button
+                  variant="outline"
+                  disabled={actions.restoreDeleted.isPending}
+                  onClick={() =>
+                    actions.restoreDeleted.mutate(item.id, {
+                      onSuccess: () => toast.show('Projeto restaurado.'),
+                      onError: () => toast.show('Nao foi possivel restaurar o projeto.', 'error'),
+                    })
+                  }
+                >
                   Restaurar
                 </Button>
                 <Button
                   variant="destructive"
                   size="icon"
                   aria-label="Excluir permanentemente"
+                  disabled={actions.permanentDelete.isPending}
                   onClick={() => {
                     if (
                       window.confirm(
                         'Excluir permanentemente este roadmap e seus dados relacionados?',
                       )
                     )
-                      actions.permanentDelete.mutate(item.id);
+                      actions.permanentDelete.mutate(item.id, {
+                        onSuccess: () => toast.show('Projeto excluido permanentemente.'),
+                        onError: () => toast.show('Nao foi possivel excluir o projeto.', 'error'),
+                      });
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
