@@ -6,6 +6,7 @@ import {
   TagRepository,
   TaskRepository,
 } from '@/database/repositories';
+import type { Tag } from '@/database/models';
 import {
   roadmapImportSchema,
   type RoadmapImport,
@@ -46,6 +47,23 @@ export class RoadmapImportService {
     let taskCount = 0;
     let subtaskCount = 0;
     let tagCount = 0;
+    const tagCache = new Map<string, Tag>();
+
+    for (const tag of await this.tags.search('')) tagCache.set(tag.name.trim().toLowerCase(), tag);
+
+    const ensureTag = async (
+      name: string,
+      color?: string,
+    ): Promise<Tag> => {
+      const normalizedName = name.trim().toLowerCase();
+      const cached = tagCache.get(normalizedName);
+      if (cached) return cached;
+
+      const created = await this.tags.create(name, color);
+      tagCache.set(normalizedName, created);
+      return created;
+    };
+
     await this.database.execute('BEGIN');
     try {
       const roadmap = await this.roadmaps.create({
@@ -98,11 +116,10 @@ export class RoadmapImportService {
           }
 
           for (const sourceTag of sourceTask.tags) {
-            const existing = (await this.tags.search(sourceTag.name)).find(
-              (tag) => tag.name.toLowerCase() === sourceTag.name.toLowerCase(),
-            );
-            const tag = existing ?? (await this.tags.create(sourceTag.name, sourceTag.color));
-            if (!existing) tagCount += 1;
+            const normalizedName = sourceTag.name.trim().toLowerCase();
+            const existedBeforeImport = tagCache.has(normalizedName);
+            const tag = await ensureTag(sourceTag.name, sourceTag.color);
+            if (!existedBeforeImport) tagCount += 1;
             await this.tags.attachToTask(task.id, tag.id);
           }
         }

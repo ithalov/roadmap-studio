@@ -46,14 +46,19 @@ describe('roadmap JSON import', () => {
               tags: [{ name: 'Produto', color: '#2563EB' }],
               subtasks: [{ title: 'Validar com clientes' }],
             },
+            {
+              title: 'Criar prototipo',
+              tags: [{ name: 'Produto', color: '#2563EB' }],
+              subtasks: [{ title: 'Validar jogabilidade' }],
+            },
           ],
         },
       ],
     });
 
     expect(result.phases).toBe(1);
-    expect(result.tasks).toBe(1);
-    expect(result.subtasks).toBe(1);
+    expect(result.tasks).toBe(2);
+    expect(result.subtasks).toBe(2);
     expect(result.tags).toBe(1);
     expect(database.commands[0]).toBe('BEGIN');
     expect(database.commands.at(-1)).toBe('COMMIT');
