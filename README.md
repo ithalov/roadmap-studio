@@ -192,4 +192,4 @@ keep migrations explicit.
 
 ## License
 
-MIT
+BSL
