@@ -77,13 +77,18 @@ jobs:
             throw "Updater signature not found: $signaturePath"
           }
 
+          $releaseAssetName = gh release view $tag --json assets --jq '.assets[] | select(.name | endswith(".msi")) | .name' | Select-Object -First 1
+          if (-not $releaseAssetName) {
+            throw "Published MSI release asset not found."
+          }
+
           $json = [ordered]@{
             version = $version
             notes = "Roadmap Studio $version"
             pub_date = (Get-Date).ToUniversalTime().ToString("o")
             platforms = [ordered]@{
               "windows-x86_64" = [ordered]@{
-                url = "https://github.com/${{ github.repository }}/releases/download/$tag/$([uri]::EscapeDataString($bundle.Name))"
+                url = "https://github.com/${{ github.repository }}/releases/download/$tag/$([uri]::EscapeDataString($releaseAssetName))"
                 signature = (Get-Content $signaturePath -Raw).Trim()
               }
             }

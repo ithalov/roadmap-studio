@@ -9,6 +9,19 @@ import { logger } from '@/services/database/Logger';
 
 type AvailableUpdate = NonNullable<Awaited<ReturnType<typeof check>>>;
 
+function updateErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object') {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return 'O updater retornou um erro sem detalhes.';
+    }
+  }
+  return 'Nao foi possivel atualizar o aplicativo.';
+}
+
 export function AppUpdatePrompt() {
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const [checking, setChecking] = useState(false);
@@ -94,7 +107,7 @@ export function AppUpdatePrompt() {
       await relaunch();
     } catch (error) {
       logger.log('ERROR', 'Update installation failed', { error });
-      setFailure(error instanceof Error ? error.message : 'Nao foi possivel atualizar o aplicativo.');
+      setFailure(updateErrorMessage(error));
       setDownloading(false);
     }
   };

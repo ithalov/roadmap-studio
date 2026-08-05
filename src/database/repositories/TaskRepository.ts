@@ -113,7 +113,49 @@ export class TaskRepository extends RepositoryBase<Task> {
   private async normalizeKanban(phaseId: string, status: string): Promise<void> { const rows=await this.database.select<QueryResultRow>('SELECT id FROM tasks WHERE phase_id=? AND status=? AND deleted_at IS NULL ORDER BY kanban_position,id',[phaseId,status]); for (const [position,row] of rows.entries()) await this.database.execute('UPDATE tasks SET kanban_position=? WHERE id=?',[position,rowValue.string(row,'id')]); }
   private async kanbanTaskIds(phaseId: string, status: string): Promise<string[]> { const rows=await this.database.select<QueryResultRow>('SELECT id FROM tasks WHERE phase_id=? AND status=? AND deleted_at IS NULL ORDER BY kanban_position,id',[phaseId,status]); return rows.map((row) => rowValue.string(row,'id')); }
   private async reindexKanban(phaseId: string, status: string, orderedTaskIds: string[]): Promise<void> { const now=new Date().toISOString(); for (const [position,id] of orderedTaskIds.entries()) await this.database.execute("UPDATE tasks SET kanban_position=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id=?",[position,now,id]); await this.normalizeKanban(phaseId,status); }
-  public async moveToStatus(taskId: string, status: string, position: number): Promise<Task | null> { const task=await this.findById(taskId); if (!task) return null; const completed=status==='completed'; const now=new Date().toISOString(); const targetPosition=Math.max(0,position); await this.database.execute('BEGIN'); try { const sourceOrder=await this.kanbanTaskIds(task.phaseId,task.status); const sourceIndex=sourceOrder.indexOf(task.id); if (task.status===status) { const reordered=sourceOrder.filter((id) => id!==task.id); const insertAt=sourceIndex !== -1 && sourceIndex < targetPosition ? Math.max(0,targetPosition-1) : targetPosition; reordered.splice(Math.min(insertAt,reordered.length),0,task.id); await this.reindexKanban(task.phaseId,status,reordered); await this.database.execute("UPDATE tasks SET status=?,completed=?,completed_at=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id=?",[status,completed,completed ? now : null,now,taskId]); } else { await this.reindexKanban(task.phaseId,task.status,sourceOrder.filter((id) => id!==task.id)); const targetOrder=await this.kanbanTaskIds(task.phaseId,status); const insertAt=Math.min(targetPosition,targetOrder.length); targetOrder.splice(insertAt,0,task.id); await this.reindexKanban(task.phaseId,status,targetOrder); await this.database.execute("UPDATE tasks SET status=?,completed=?,completed_at=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id=?",[status,completed,completed ? now : null,now,taskId]); } await this.history('kanban_task_moved',taskId,{ fromStatus:task.status,toStatus:status,position:targetPosition }); await this.database.execute('COMMIT'); return this.findById(taskId); } catch (error) { await this.database.execute('ROLLBACK'); throw error; } }
+  public async moveToStatus(taskId: string, status: string, position: number): Promise<Task | null> {
+    const task = await this.findById(taskId);
+    if (!task) return null;
+
+    const completed = status === 'completed';
+    const now = new Date().toISOString();
+    const targetPosition = Math.max(0, position);
+    const sourceOrder = await this.kanbanTaskIds(task.phaseId, task.status);
+    const sourceIndex = sourceOrder.indexOf(task.id);
+
+    if (task.status === status) {
+      const reordered = sourceOrder.filter((id) => id !== task.id);
+      const insertAt =
+        sourceIndex !== -1 && sourceIndex < targetPosition
+          ? Math.max(0, targetPosition - 1)
+          : targetPosition;
+
+      reordered.splice(Math.min(insertAt, reordered.length), 0, task.id);
+      await this.reindexKanban(task.phaseId, status, reordered);
+    } else {
+      const targetOrder = await this.kanbanTaskIds(task.phaseId, status);
+      const insertAt = Math.min(targetPosition, targetOrder.length);
+
+      await this.database.execute(
+        "UPDATE tasks SET status=?,completed=?,completed_at=?,kanban_position=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id=?",
+        [status, completed, completed ? now : null, insertAt, now, taskId],
+      );
+      await this.reindexKanban(
+        task.phaseId,
+        task.status,
+        sourceOrder.filter((id) => id !== task.id),
+      );
+      targetOrder.splice(insertAt, 0, task.id);
+      await this.reindexKanban(task.phaseId, status, targetOrder);
+    }
+
+    await this.history('kanban_task_moved', taskId, {
+      fromStatus: task.status,
+      toStatus: status,
+      position: targetPosition,
+    });
+    return this.findById(taskId);
+  }
   public async bulkUpdateStatus(taskIds: string[], status: string): Promise<void> { if (!taskIds.length) return; const marks=taskIds.map(() => '?').join(','); const completed=status==='completed'; await this.database.execute('BEGIN'); try { await this.database.execute(`UPDATE tasks SET status=?,completed=?,completed_at=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id IN (${marks}) AND deleted_at IS NULL`,[status,completed,completed ? new Date().toISOString() : null,new Date().toISOString(),...taskIds]); for (const id of taskIds) await this.history('kanban_bulk_status_changed',id,{ status }); await this.database.execute('COMMIT'); } catch (error) { await this.database.execute('ROLLBACK'); throw error; } }
   public async bulkUpdatePriority(taskIds: string[], priority: string): Promise<void> { if (!taskIds.length) return; const marks=taskIds.map(() => '?').join(','); await this.database.execute('BEGIN'); try { await this.database.execute(`UPDATE tasks SET priority=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id IN (${marks}) AND deleted_at IS NULL`,[priority,new Date().toISOString(),...taskIds]); for (const id of taskIds) await this.history('kanban_bulk_priority_changed',id,{ priority }); await this.database.execute('COMMIT'); } catch (error) { await this.database.execute('ROLLBACK'); throw error; } }
   public async bulkMoveToPhase(taskIds: string[], phaseId: string): Promise<void> { if (!taskIds.length) return; const marks=taskIds.map(() => '?').join(','); await this.database.execute('BEGIN'); try { await this.database.execute(`UPDATE tasks SET phase_id=?,updated_at=?,sync_status='pending',local_version=local_version+1 WHERE id IN (${marks}) AND deleted_at IS NULL`,[phaseId,new Date().toISOString(),...taskIds]); for (const id of taskIds) await this.history('kanban_bulk_phase_changed',id,{ phaseId }); await this.normalize(phaseId); await this.database.execute('COMMIT'); } catch (error) { await this.database.execute('ROLLBACK'); throw error; } }
