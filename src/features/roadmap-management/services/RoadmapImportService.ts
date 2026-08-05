@@ -51,10 +51,7 @@ export class RoadmapImportService {
 
     for (const tag of await this.tags.search('')) tagCache.set(tag.name.trim().toLowerCase(), tag);
 
-    const ensureTag = async (
-      name: string,
-      color?: string,
-    ): Promise<Tag> => {
+    const ensureTag = async (name: string, color?: string): Promise<Tag> => {
       const normalizedName = name.trim().toLowerCase();
       const cached = tagCache.get(normalizedName);
       if (cached) return cached;
@@ -64,79 +61,74 @@ export class RoadmapImportService {
       return created;
     };
 
-    await this.database.execute('BEGIN');
-    try {
-      const roadmap = await this.roadmaps.create({
-        ...input.roadmap,
+    // The SQL plugin can execute subsequent repository reads on another connection.
+    // Keeping an explicit transaction open here makes SQLite report "database is locked".
+    const roadmap = await this.roadmaps.create({
+      ...input.roadmap,
+      deviceId: 'local-device',
+    });
+
+    for (const [phasePosition, sourcePhase] of input.phases.entries()) {
+      const phase = await this.phases.create({
+        roadmapId: roadmap.id,
+        title: sourcePhase.title,
+        description: sourcePhase.description ?? '',
+        position: sourcePhase.position ?? phasePosition,
+        status: sourcePhase.status ?? 'planned',
+        priority: sourcePhase.priority ?? 'medium',
+        progress: sourcePhase.progress ?? 0,
+        startDate: sourcePhase.startDate,
+        targetDate: sourcePhase.targetDate,
         deviceId: 'local-device',
       });
 
-      for (const [phasePosition, sourcePhase] of input.phases.entries()) {
-        const phase = await this.phases.create({
-          roadmapId: roadmap.id,
-          title: sourcePhase.title,
-          description: sourcePhase.description ?? '',
-          position: sourcePhase.position ?? phasePosition,
-          status: sourcePhase.status ?? 'planned',
-          priority: sourcePhase.priority ?? 'medium',
-          progress: sourcePhase.progress ?? 0,
-          startDate: sourcePhase.startDate,
-          targetDate: sourcePhase.targetDate,
+      for (const [taskPosition, sourceTask] of sourcePhase.tasks.entries()) {
+        const completed = sourceTask.completed ?? sourceTask.status === 'completed';
+        const task = await this.tasks.create({
+          phaseId: phase.id,
+          title: sourceTask.title,
+          description: sourceTask.description ?? '',
+          position: sourceTask.position ?? taskPosition,
+          status: sourceTask.status ?? (completed ? 'completed' : 'not_started'),
+          priority: sourceTask.priority ?? 'medium',
+          completed,
+          startDate: sourceTask.startDate,
+          estimatedMinutes: sourceTask.estimatedMinutes,
+          spentMinutes: sourceTask.spentMinutes ?? 0,
+          dueDate: sourceTask.dueDate,
+          assignee: sourceTask.assignee,
           deviceId: 'local-device',
         });
+        taskCount += 1;
 
-        for (const [taskPosition, sourceTask] of sourcePhase.tasks.entries()) {
-          const completed = sourceTask.completed ?? sourceTask.status === 'completed';
-          const task = await this.tasks.create({
-            phaseId: phase.id,
-            title: sourceTask.title,
-            description: sourceTask.description ?? '',
-            position: sourceTask.position ?? taskPosition,
-            status: sourceTask.status ?? (completed ? 'completed' : 'not_started'),
-            priority: sourceTask.priority ?? 'medium',
-            completed,
-            startDate: sourceTask.startDate,
-            estimatedMinutes: sourceTask.estimatedMinutes,
-            spentMinutes: sourceTask.spentMinutes ?? 0,
-            dueDate: sourceTask.dueDate,
-            assignee: sourceTask.assignee,
+        for (const [subtaskPosition, sourceSubtask] of sourceTask.subtasks.entries()) {
+          await this.subtasks.create({
+            taskId: task.id,
+            title: sourceSubtask.title,
+            completed: sourceSubtask.completed ?? false,
+            position: sourceSubtask.position ?? subtaskPosition,
             deviceId: 'local-device',
           });
-          taskCount += 1;
+          subtaskCount += 1;
+        }
 
-          for (const [subtaskPosition, sourceSubtask] of sourceTask.subtasks.entries()) {
-            await this.subtasks.create({
-              taskId: task.id,
-              title: sourceSubtask.title,
-              completed: sourceSubtask.completed ?? false,
-              position: sourceSubtask.position ?? subtaskPosition,
-              deviceId: 'local-device',
-            });
-            subtaskCount += 1;
-          }
-
-          for (const sourceTag of sourceTask.tags) {
-            const normalizedName = sourceTag.name.trim().toLowerCase();
-            const existedBeforeImport = tagCache.has(normalizedName);
-            const tag = await ensureTag(sourceTag.name, sourceTag.color);
-            if (!existedBeforeImport) tagCount += 1;
-            await this.tags.attachToTask(task.id, tag.id);
-          }
+        for (const sourceTag of sourceTask.tags) {
+          const normalizedName = sourceTag.name.trim().toLowerCase();
+          const existedBeforeImport = tagCache.has(normalizedName);
+          const tag = await ensureTag(sourceTag.name, sourceTag.color);
+          if (!existedBeforeImport) tagCount += 1;
+          await this.tags.attachToTask(task.id, tag.id);
         }
       }
-
-      await this.database.execute('COMMIT');
-      return {
-        roadmapId: roadmap.id,
-        phases: input.phases.length,
-        tasks: taskCount,
-        subtasks: subtaskCount,
-        tags: tagCount,
-      };
-    } catch (error) {
-      await this.database.execute('ROLLBACK');
-      throw error;
     }
+
+    return {
+      roadmapId: roadmap.id,
+      phases: input.phases.length,
+      tasks: taskCount,
+      subtasks: subtaskCount,
+      tags: tagCount,
+    };
   }
 }
 

@@ -16,7 +16,10 @@ class RecordingDatabase implements SqlExecutor {
     return { rowsAffected: 1 };
   }
 
-  public async select<T extends QueryResultRow>(sql: string, values: SqlBindValue[] = []): Promise<T[]> {
+  public async select<T extends QueryResultRow>(
+    sql: string,
+    values: SqlBindValue[] = [],
+  ): Promise<T[]> {
     void sql;
     void values;
     return [];
@@ -27,12 +30,14 @@ describe('roadmap JSON import', () => {
   it('validates the document before executing SQL', async () => {
     const database = new RecordingDatabase();
 
-    await expect(new RoadmapImportService(database).import({ version: 1, roadmap: {}, phases: [] })).rejects.toThrow();
+    await expect(
+      new RoadmapImportService(database).import({ version: 1, roadmap: {}, phases: [] }),
+    ).rejects.toThrow();
 
     expect(database.commands).toHaveLength(0);
   });
 
-  it('creates a roadmap hierarchy in one transaction', async () => {
+  it('creates a roadmap hierarchy without holding a SQLite transaction lock', async () => {
     const database = new RecordingDatabase();
     const result = await new RoadmapImportService(database).import({
       version: 1,
@@ -60,13 +65,15 @@ describe('roadmap JSON import', () => {
     expect(result.tasks).toBe(2);
     expect(result.subtasks).toBe(2);
     expect(result.tags).toBe(1);
-    expect(database.commands[0]).toBe('BEGIN');
-    expect(database.commands.at(-1)).toBe('COMMIT');
+    expect(database.commands).not.toContain('BEGIN');
+    expect(database.commands).not.toContain('COMMIT');
     expect(database.commands.some((sql) => sql.startsWith('INSERT INTO roadmaps'))).toBe(true);
     expect(database.commands.some((sql) => sql.startsWith('INSERT INTO phases'))).toBe(true);
     expect(database.commands.some((sql) => sql.startsWith('INSERT INTO tasks'))).toBe(true);
     expect(database.commands.some((sql) => sql.startsWith('INSERT INTO subtasks'))).toBe(true);
     expect(database.commands.some((sql) => sql.startsWith('INSERT INTO tags'))).toBe(true);
-    expect(database.commands.some((sql) => sql.startsWith('INSERT OR IGNORE INTO task_tags'))).toBe(true);
+    expect(database.commands.some((sql) => sql.startsWith('INSERT OR IGNORE INTO task_tags'))).toBe(
+      true,
+    );
   });
 });
