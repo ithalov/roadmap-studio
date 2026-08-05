@@ -1,0 +1,6 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import type { KanbanFilters } from '@/features/kanban/types/kanban';
+import type { TaskStatus } from '@/features/tasks/types/task';
+interface KanbanUiState { filters: KanbanFilters; compact: boolean; selectedTaskIds: string[]; focusedColumn: TaskStatus | null; setFilters: (filters: KanbanFilters) => void; clearFilters: () => void; setCompact: (compact: boolean) => void; toggleTask: (id: string) => void; clearSelection: () => void; setFocusedColumn: (status: TaskStatus | null) => void; }
+export const useKanbanUiStore = create<KanbanUiState>()(persist((set) => ({ filters:{ sort:'kanban' },compact:false,selectedTaskIds:[],focusedColumn:null,setFilters:(filters) => set({ filters }),clearFilters:() => set({ filters:{ sort:'kanban' } }),setCompact:(compact) => set({ compact }),toggleTask:(id) => set((state) => ({ selectedTaskIds:state.selectedTaskIds.includes(id) ? state.selectedTaskIds.filter((item) => item!==id) : [...state.selectedTaskIds,id] })),clearSelection:() => set({ selectedTaskIds:[] }),setFocusedColumn:(focusedColumn) => set({ focusedColumn }),}),{ name:'roadmap-studio-kanban-ui',storage:createJSONStorage(() => localStorage),partialize:(state) => ({ compact:state.compact }) }));

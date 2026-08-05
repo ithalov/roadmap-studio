@@ -1,0 +1,18 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { TaskSearchFilters } from '@/database/repositories/TaskRepository';
+import { taskService } from '@/features/tasks/services/TaskService';
+import type { TaskFormValues } from '@/features/tasks/schemas/task-form';
+const key = ['tasks'] as const;
+export function useTasks(phaseId: string, filters: Omit<TaskSearchFilters, 'phaseId'> = {}) { return useQuery({ queryKey: [...key, phaseId, filters], queryFn: () => taskService.list(phaseId, filters), enabled: Boolean(phaseId) }); }
+export function useDeletedTasks(phaseId: string) { return useQuery({ queryKey: [...key, phaseId, 'deleted'], queryFn: () => taskService.listDeleted(phaseId), enabled: Boolean(phaseId) }); }
+export function useTaskStats(phaseId: string) { return useQuery({ queryKey: [...key, phaseId, 'stats'], queryFn: () => taskService.stats(phaseId), enabled: Boolean(phaseId) }); }
+export function useSubtasks(taskId: string) { return useQuery({ queryKey: ['subtasks', taskId], queryFn: () => taskService.subtasksFor(taskId), enabled: Boolean(taskId) }); }
+export function useTaskTags(taskId: string) { return useQuery({ queryKey: ['task-tags', taskId], queryFn: () => taskService.tagsFor(taskId), enabled: Boolean(taskId) }); }
+export function useTaskHistory(taskId: string) { return useQuery({ queryKey: ['task-history', taskId], queryFn: () => taskService.history(taskId), enabled: Boolean(taskId) }); }
+export function useTaskActions(phaseId: string) { const client = useQueryClient(); const refresh = () => { void client.invalidateQueries({ queryKey: [...key, phaseId] }); }; return {
+  create: useMutation({ mutationFn: (values: TaskFormValues) => taskService.create(phaseId, values), onSuccess: refresh }),
+  update: useMutation({ mutationFn: ({ id, values }: { id: string; values: TaskFormValues }) => taskService.update(id, values), onSuccess: refresh }),
+  duplicate: useMutation({ mutationFn: taskService.duplicate, onSuccess: refresh }), remove: useMutation({ mutationFn: taskService.remove, onSuccess: refresh }), restore: useMutation({ mutationFn: taskService.restore, onSuccess: refresh }), permanentDelete: useMutation({ mutationFn: taskService.permanentDelete, onSuccess: refresh }), toggle: useMutation({ mutationFn: taskService.toggleCompleted, onSuccess: refresh }), reorder: useMutation({ mutationFn: (ids: string[]) => taskService.reorder(phaseId, ids), onSuccess: refresh }), move: useMutation({ mutationFn: ({ taskId, targetPhaseId }: { taskId: string; targetPhaseId: string }) => taskService.move(taskId, targetPhaseId), onSuccess: refresh }),
+}; }
+export function useSubtaskActions(taskId: string) { const client = useQueryClient(); const refresh = () => { void client.invalidateQueries({ queryKey: ['subtasks', taskId] }); void client.invalidateQueries({ queryKey: key }); }; return { create: useMutation({ mutationFn: (title: string) => taskService.createSubtask(taskId,title), onSuccess: refresh }), toggle: useMutation({ mutationFn: taskService.toggleSubtask, onSuccess: refresh }) }; }
+export function useTaskTagActions(taskId: string) { const client = useQueryClient(); const refresh = () => { void client.invalidateQueries({ queryKey: ['task-tags', taskId] }); void client.invalidateQueries({ queryKey: key }); }; return { create: useMutation({ mutationFn: ({ name,color }: { name: string; color: string }) => taskService.createTag(name,color), onSuccess: refresh }), attach: useMutation({ mutationFn: (tagId: string) => taskService.attachTag(taskId,tagId), onSuccess: refresh }), detach: useMutation({ mutationFn: (tagId: string) => taskService.detachTag(taskId,tagId), onSuccess: refresh }) }; }
