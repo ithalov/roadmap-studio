@@ -53,7 +53,11 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart('v')
-          $bundle = Get-ChildItem "src-tauri/target/release/bundle/msi" -Filter "*.msi.zip" | Select-Object -First 1
+          $bundle = Get-ChildItem "src-tauri/target/release/bundle/msi" -Filter "*.msi" | Select-Object -First 1
+
+          if (-not $bundle) {
+            $bundle = Get-ChildItem "src-tauri/target/release/bundle/msi" -Filter "*.msi.zip" | Select-Object -First 1
+          }
 
           if (-not $bundle) {
             throw "MSI updater bundle not found."
