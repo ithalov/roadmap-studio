@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { RoadmapRepository } from '@/database/repositories/RoadmapRepository';
 import type {
   QueryResultRow,
-  SqlBindValue,
   SqlExecutionResult,
   SqlExecutor,
 } from '@/types/database';
@@ -10,14 +9,13 @@ import type {
 class RecordingDatabase implements SqlExecutor {
   public readonly commands: string[] = [];
 
-  public async execute(sql: string, _values: SqlBindValue[] = []): Promise<SqlExecutionResult> {
+  public async execute(sql: string): Promise<SqlExecutionResult> {
     this.commands.push(sql);
     return { rowsAffected: 1 };
   }
 
   public async select<T extends QueryResultRow>(
     _sql: string,
-    _values: SqlBindValue[] = [],
   ): Promise<T[]> {
     this.commands.push(_sql);
     return [];

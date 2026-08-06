@@ -3,7 +3,7 @@ import { databaseService } from '@/database/database-service';
 import { RoadmapRepository } from '@/database/repositories';
 import { mapMeta, rowValue } from '@/database/repositories/row-mapper';
 import type { QueryResultRow } from '@/types/database';
-import type { DashboardActivity, DashboardInsights, DashboardPeriod, DashboardTask, ProductivityDay } from '@/features/dashboard/types/dashboard';
+import type { DashboardInsights, DashboardPeriod, DashboardTask } from '@/features/dashboard/types/dashboard';
 
 const periodDays: Record<DashboardPeriod, number> = { today: 1, week: 7, month: 30, year: 365 };
 

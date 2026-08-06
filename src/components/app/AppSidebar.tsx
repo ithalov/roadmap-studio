@@ -6,10 +6,13 @@ import { useUIStore } from '@/store/ui-store';
 import { Button } from '@/components/ui/Button';
 import { Separator } from '@/components/ui/Separator';
 import { BrandMark } from '@/components/app/BrandMark';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export function AppSidebar() {
   const collapsed = useUIStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const { t } = useTranslation();
+  const labels = [t('overview'), t('projects'), t('archived'), t('trash'), t('settings'), t('about')];
 
   return (
     <aside
@@ -25,7 +28,7 @@ export function AppSidebar() {
       <Separator />
 
       <nav className={cn('flex flex-1 flex-col gap-1 px-3 py-4', collapsed && 'items-center px-2')}>
-        {primaryNavigation.map((item) => {
+        {primaryNavigation.map((item, index) => {
           const Icon = item.icon;
 
           return (
@@ -44,9 +47,9 @@ export function AppSidebar() {
             >
               <Icon className="h-4 w-4" />
               {!collapsed ? (
-                <span>{item.label}</span>
+                <span>{labels[index]}</span>
               ) : (
-                <span className="sr-only">{item.label}</span>
+                <span className="sr-only">{labels[index]}</span>
               )}
             </NavLink>
           );
@@ -64,9 +67,9 @@ export function AppSidebar() {
         {!collapsed ? (
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              Foundation
+              {t('foundation')}
             </p>
-            <p className="text-xs text-muted-foreground">Phase 1 scaffold</p>
+            <p className="text-xs text-muted-foreground">{t('phase')}</p>
           </div>
         ) : null}
         <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Toggle sidebar">

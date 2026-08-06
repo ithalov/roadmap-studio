@@ -26,6 +26,7 @@ import { useDeletedPhases } from '@/features/phases/hooks/usePhases';
 import { useToast } from '@/components/feedback/useToast';
 import { phaseStatusLabels } from '@/features/phases/types/phase';
 import { TaskList } from '@/features/tasks/components/TaskList';
+import { useTranslation } from '@/i18n/useTranslation';
 function Row({ phase, open, remove }: { phase: Phase; open(): void; remove(): void }) {
   const sort = useSortable({ id: phase.id });
   return (
@@ -62,6 +63,8 @@ export function ProjectEditorPage() {
   const actions = usePhaseActions(id);
   const deleted = useDeletedPhases(id);
   const toast = useToast();
+  const { language } = useTranslation();
+  const english = language === 'en-US';
   const [optimistic, setOptimistic] = useState<Phase[] | null>(null);
   const [selected, setSelected] = useState<Phase | null>(null);
   const [search, setSearch] = useState('');
@@ -94,13 +97,13 @@ export function ProjectEditorPage() {
       <header className="flex justify-between gap-3">
         <div>
           <Button asChild variant="ghost" size="sm">
-            <Link to={`/project/${id}`}>Voltar ao projeto</Link>
+            <Link to={`/project/${id}`}>{english ? 'Back to project' : 'Voltar ao projeto'}</Link>
           </Button>
-          <h1 className="mt-2 text-2xl font-semibold">Editor de fases</h1>
+          <h1 className="mt-2 text-2xl font-semibold">{english ? 'Phase editor' : 'Editor de fases'}</h1>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setFocus(!focus)}>
-            {focus ? 'Sair do foco' : 'Modo foco'}
+            {focus ? (english ? 'Exit focus' : 'Sair do foco') : (english ? 'Focus mode' : 'Modo foco')}
           </Button>
           <Button
             onClick={() =>
@@ -119,7 +122,7 @@ export function ProjectEditorPage() {
             }
           >
             <Plus className="h-4 w-4" />
-            Adicionar
+            {english ? 'Add phase' : 'Adicionar'}
           </Button>
         </div>
       </header>
@@ -131,7 +134,7 @@ export function ProjectEditorPage() {
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar fases"
+              placeholder={english ? 'Search phases' : 'Buscar fases'}
             />
           </div>
           <select
@@ -139,7 +142,7 @@ export function ProjectEditorPage() {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            <option value="">Todos</option>
+            <option value="">{english ? 'All' : 'Todos'}</option>
             {Object.entries(phaseStatusLabels).map(([v, label]) => (
               <option key={v} value={v}>
                 {label}
@@ -149,7 +152,7 @@ export function ProjectEditorPage() {
         </div>
       )}
       {query.isLoading ? (
-        <p>Carregando fases...</p>
+        <p>{english ? 'Loading phases...' : 'Carregando fases...'}</p>
       ) : !visible.length ? (
         <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
           Este roadmap ainda não possui fases compatíveis.

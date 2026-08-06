@@ -5,6 +5,10 @@ import { defaultBadgePreferences, type BadgeAnimation, type BadgeSize, type Badg
 import { useSettings } from '@/features/settings/hooks/useSettings';
 import { cn } from '@/utils/cn';
 
+const badgeTranslations: Record<string, string> = {
+  'Rascunho': 'Draft', 'Planejado': 'Planned', 'Em andamento': 'In progress', 'Concluído': 'Completed', 'ConcluÃ­do': 'Completed', 'Pausado': 'Paused', 'Bloqueado': 'Blocked', 'Arquivado': 'Archived', 'Backlog': 'Backlog', 'Não iniciada': 'Not started', 'Nao iniciada': 'Not started', 'Em revisão': 'In review', 'Em revisao': 'In review', 'Cancelada': 'Cancelled', 'Crítica': 'Critical', 'Critica': 'Critical', 'Alta': 'High', 'Média': 'Medium', 'Media': 'Medium', 'Baixa': 'Low', 'Opcional': 'Optional', 'Sem categoria': 'No category', 'Sem prioridade': 'No priority', 'Concluida': 'Completed',
+};
+
 const colorClasses: Record<string, string> = {
   slate: 'bg-slate-500/12 text-slate-700 dark:text-slate-300', zinc: 'bg-zinc-500/12 text-zinc-700 dark:text-zinc-300',
   blue: 'bg-blue-500/12 text-blue-700 dark:text-blue-300', sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
@@ -51,6 +55,7 @@ export function Badge({ variant = 'neutral', label, icon: Icon, color = 'slate',
   const withBorder = outlined ?? preferences.badgesShowBorder;
   const isMinimal = minimal ?? preferences.badgesMinimal;
   const customColor = /^#[0-9A-Fa-f]{6}$/.test(color);
+  const visibleLabel = settings?.language === 'en-US' ? (badgeTranslations[label] ?? label) : label;
   const content = (
     <span
       className={cn(
@@ -67,7 +72,7 @@ export function Badge({ variant = 'neutral', label, icon: Icon, color = 'slate',
       {...props}
     >
       {showIcon && Icon ? <Icon aria-hidden="true" className={size === 'lg' ? 'h-3.5 w-3.5' : 'h-3 w-3'} /> : null}
-      <span>{label}</span>
+      <span>{visibleLabel}</span>
       {typeof count === 'number' ? <span className="ml-0.5 tabular-nums opacity-80">{count}</span> : null}
     </span>
   );

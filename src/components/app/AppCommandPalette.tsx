@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useRoadmaps } from '@/features/roadmap-management/hooks/useRoadmaps';
 import { useUIStore } from '@/store/ui-store';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const shortcuts = [
   { label: 'Projetos', description: 'Abrir a biblioteca local', to: '/projects' },
@@ -18,6 +19,8 @@ const shortcuts = [
 export function AppCommandPalette() {
   const open = useUIStore((state) => state.commandPaletteOpen);
   const setOpen = useUIStore((state) => state.setCommandPaletteOpen);
+  const { language } = useTranslation();
+  const english = language === 'en-US';
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const search = query.trim();
@@ -52,7 +55,7 @@ export function AppCommandPalette() {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,820px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background p-4 shadow-2xl">
-          <Dialog.Title className="sr-only">Busca global</Dialog.Title>
+          <Dialog.Title className="sr-only">{english ? 'Global search' : 'Busca global'}</Dialog.Title>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -61,7 +64,7 @@ export function AppCommandPalette() {
                 className="h-11 pl-9"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar projetos ou navegar"
+                placeholder={english ? 'Search projects or navigate' : 'Buscar projetos ou navegar'}
               />
             </div>
             <Dialog.Close asChild>
@@ -73,7 +76,7 @@ export function AppCommandPalette() {
 
           <div className="mt-4 grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Atalhos</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{english ? 'Shortcuts' : 'Atalhos'}</p>
               <div className="space-y-2">
                 {shortcuts.map((shortcut) => (
                   <Button
@@ -96,11 +99,11 @@ export function AppCommandPalette() {
 
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                {search ? 'Resultados' : 'Projetos recentes'}
+                {search ? (english ? 'Results' : 'Resultados') : (english ? 'Recent projects' : 'Projetos recentes')}
               </p>
               <div className="max-h-80 overflow-auto rounded-xl border">
                 {roadmaps.isLoading ? (
-                  <p className="px-4 py-8 text-sm text-muted-foreground">Carregando projetos...</p>
+                  <p className="px-4 py-8 text-sm text-muted-foreground">{english ? 'Loading projects...' : 'Carregando projetos...'}</p>
                 ) : roadmaps.data?.length ? (
                   <div className="divide-y">
                     {roadmaps.data.map((item) => (
@@ -128,7 +131,7 @@ export function AppCommandPalette() {
                   </div>
                 ) : (
                   <p className="px-4 py-8 text-sm text-muted-foreground">
-                    Nenhum projeto encontrado.
+                    {english ? 'No project found.' : 'Nenhum projeto encontrado.'}
                   </p>
                 )}
               </div>

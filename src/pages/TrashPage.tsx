@@ -6,17 +6,20 @@ import {
   useRoadmapActions,
 } from '@/features/roadmap-management/hooks/useRoadmaps';
 import { useToast } from '@/components/feedback/useToast';
+import { useTranslation } from '@/i18n/useTranslation';
 export function TrashPage() {
   const result = useDeletedRoadmaps();
   const actions = useRoadmapActions();
   const toast = useToast();
+  const { language } = useTranslation();
+  const english = language === 'en-US';
   return (
     <PagePlaceholder
-      title="Lixeira"
+      title={english ? 'Trash' : 'Lixeira'}
       description="Roadmaps excluídos permanecem disponíveis para restauração."
     >
       {result.isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando lixeira...</p>
+        <p className="text-sm text-muted-foreground">{english ? 'Loading trash...' : 'Carregando lixeira...'}</p>
       ) : result.data?.length ? (
         <div className="divide-y rounded-lg border bg-card">
           {result.data.map((item) => (
@@ -38,7 +41,7 @@ export function TrashPage() {
                     })
                   }
                 >
-                  Restaurar
+                  {english ? 'Restore' : 'Restaurar'}
                 </Button>
                 <Button
                   variant="destructive"

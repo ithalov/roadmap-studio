@@ -7,6 +7,7 @@ import { RoadmapFormDialog } from '@/features/roadmap-management/components/Road
 import { useRoadmapActions, useRoadmaps } from '@/features/roadmap-management/hooks/useRoadmaps';
 import type { Roadmap } from '@/database/models';
 import type { RoadmapView } from '@/features/roadmap-management/types/roadmap-management';
+import { useTranslation } from '@/i18n/useTranslation';
 export function ProjectsPage() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<RoadmapView>('grid');
@@ -14,6 +15,7 @@ export function ProjectsPage() {
   const [editing, setEditing] = useState<Roadmap | null>(null);
   const result = useRoadmaps({ query });
   const actions = useRoadmapActions();
+  const { t } = useTranslation();
   const pending = actions.create.isPending || actions.update.isPending;
   const submit = (values: Parameters<typeof actions.create.mutate>[0]) => {
     if (editing)
@@ -24,8 +26,8 @@ export function ProjectsPage() {
     <section className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Biblioteca local</p>
-          <h1 className="text-2xl font-semibold">Projetos</h1>
+          <p className="text-sm text-muted-foreground">{t('localLibrary')}</p>
+          <h1 className="text-2xl font-semibold">{t('projects')}</h1>
         </div>
         <Button
           onClick={() => {
@@ -34,7 +36,7 @@ export function ProjectsPage() {
           }}
         >
           <Plus className="h-4 w-4" />
-          Novo roadmap
+          {t('newRoadmap')}
         </Button>
       </header>
       <div className="flex flex-wrap items-center gap-2">
@@ -44,13 +46,13 @@ export function ProjectsPage() {
             className="pl-9"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por título, categoria ou versão"
+            placeholder={t('searchProjects')}
           />
         </div>
         <Button
           variant={view === 'grid' ? 'secondary' : 'ghost'}
           size="icon"
-          aria-label="Visualização em grade"
+          aria-label={t('gridView')}
           onClick={() => setView('grid')}
         >
           <Grid2X2 className="h-4 w-4" />
@@ -58,13 +60,13 @@ export function ProjectsPage() {
         <Button
           variant={view === 'list' ? 'secondary' : 'ghost'}
           size="icon"
-          aria-label="Visualização em lista"
+          aria-label={t('listView')}
           onClick={() => setView('list')}
         >
           <List className="h-4 w-4" />
         </Button>
       </div>
-      <p className="text-sm text-muted-foreground">{result.data?.length ?? 0} resultado(s)</p>
+      <p className="text-sm text-muted-foreground">{result.data?.length ?? 0} {t('results')}</p>
       {result.isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando roadmaps...</p>
       ) : result.error ? (

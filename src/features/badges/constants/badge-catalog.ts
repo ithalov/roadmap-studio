@@ -6,7 +6,6 @@ import {
   CirclePause,
   CirclePlay,
   CircleStop,
-  Cloud,
   Code2,
   Database,
   Gamepad2,

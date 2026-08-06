@@ -7,7 +7,6 @@ import { categoryBadgeMeta, progressBadgeMeta, statusBadgeMeta } from '@/feature
 import { useToast } from '@/components/feedback/useToast';
 import { RoadmapFormDialog } from '@/features/roadmap-management/components/RoadmapFormDialog';
 import { useRoadmap, useRoadmapActions } from '@/features/roadmap-management/hooks/useRoadmaps';
-import { roadmapStatusLabels } from '@/features/roadmap-management/types/roadmap-management';
 
 export function ProjectPage() {
   const { id = '' } = useParams<{ id: string }>();

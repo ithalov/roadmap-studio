@@ -23,6 +23,7 @@ import {
 } from '@/features/settings/types/wallpaper';
 import { useThemeStore } from '@/store/theme-store';
 import { cn } from '@/utils/cn';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const settingsKey = ['settings'] as const;
 
@@ -36,6 +37,8 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const setTheme = useThemeStore((state) => state.setTheme);
   const query = useSettings();
+  const { language } = useTranslation();
+  const english = language === 'en-US';
   const save = useSaveSettings();
   const importer = useRoadmapImport();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -140,22 +143,22 @@ export function SettingsPage() {
       <header>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Settings2 className="h-4 w-4" />
-          Preferencias do aplicativo
+          {english ? 'Application preferences' : 'Preferências do aplicativo'}
         </div>
-        <h1 className="mt-2 text-2xl font-semibold">Configuracoes</h1>
+        <h1 className="mt-2 text-2xl font-semibold">{english ? 'Settings' : 'Configurações'}</h1>
       </header>
 
       {query.isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando configuracoes...</p>
+        <p className="text-sm text-muted-foreground">{english ? 'Loading settings...' : 'Carregando configurações...'}</p>
       ) : null}
       {query.isError ? (
-        <p className="text-sm text-destructive">Nao foi possivel carregar as configuracoes.</p>
+        <p className="text-sm text-destructive">{english ? 'Could not load settings.' : 'Não foi possível carregar as configurações.'}</p>
       ) : null}
 
       <form className="flex flex-col gap-5" onSubmit={submit}>
         <Card>
           <CardHeader>
-            <CardTitle>Aparencia e idioma</CardTitle>
+            <CardTitle>{english ? 'Appearance and language' : 'Aparência e idioma'}</CardTitle>
             <CardDescription>
               Defina como o Roadmap Studio sera apresentado neste dispositivo.
             </CardDescription>
@@ -235,7 +238,7 @@ export function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Wallpaper premium</CardTitle>
+            <CardTitle>{english ? 'Premium wallpaper' : 'Wallpaper premium'}</CardTitle>
             <CardDescription>
               Um fundo quase invisivel, leve e sofisticado para dar profundidade sem distrair.
             </CardDescription>
@@ -301,7 +304,7 @@ export function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Persistencia local</CardTitle>
+            <CardTitle>{english ? 'Local persistence' : 'Persistência local'}</CardTitle>
             <CardDescription>
               Controle o salvamento automatico e identifique o workspace local.
             </CardDescription>
@@ -344,14 +347,14 @@ export function SettingsPage() {
         <div className="flex justify-end">
           <Button type="submit" disabled={save.isPending || query.isLoading}>
             <Save className="h-4 w-4" />
-            {save.isPending ? 'Salvando...' : 'Salvar configuracoes'}
+            {save.isPending ? (english ? 'Saving...' : 'Salvando...') : (english ? 'Save settings' : 'Salvar configurações')}
           </Button>
         </div>
       </form>
 
       <Card>
         <CardHeader>
-          <CardTitle>Importar roadmap</CardTitle>
+          <CardTitle>{english ? 'Import roadmap' : 'Importar roadmap'}</CardTitle>
           <CardDescription>
             Importe um arquivo JSON de roadmap para criar um novo projeto com fases e tarefas.
           </CardDescription>
