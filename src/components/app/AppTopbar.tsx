@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/ui-store';
 
 export function AppTopbar() {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const setCommandPaletteOpen = useUIStore((state) => state.setCommandPaletteOpen);
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl">
@@ -20,10 +21,15 @@ export function AppTopbar() {
           >
             <PanelLeftClose className="h-4 w-4" />
           </Button>
-          <div className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground md:flex">
+          <Button
+            type="button"
+            variant="ghost"
+            className="hidden h-10 min-w-[18rem] justify-start gap-2 rounded-full border border-border bg-card px-4 text-sm text-muted-foreground md:flex"
+            onClick={() => setCommandPaletteOpen(true)}
+          >
             <Search className="h-3.5 w-3.5" />
             <span>Search, go to, create</span>
-          </div>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">

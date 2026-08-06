@@ -4,7 +4,7 @@ import type { RoadmapFilters } from '@/features/roadmap-management/types/roadmap
 import type { RoadmapFormValues } from '@/features/roadmap-management/schemas/roadmap-form';
 
 const key = ['roadmaps'] as const;
-export function useRoadmaps(filters: RoadmapFilters = {}) { return useQuery({ queryKey: [...key, 'active', filters], queryFn: () => roadmapService.getActive(filters) }); }
+export function useRoadmaps(filters: RoadmapFilters = {}, enabled = true) { return useQuery({ queryKey: [...key, 'active', filters], queryFn: () => roadmapService.getActive(filters), enabled }); }
 export function useArchivedRoadmaps(filters: RoadmapFilters = {}) { return useQuery({ queryKey: [...key, 'archived', filters], queryFn: () => roadmapService.getArchived(filters) }); }
 export function useDeletedRoadmaps(filters: RoadmapFilters = {}) { return useQuery({ queryKey: [...key, 'deleted', filters], queryFn: () => roadmapService.getDeleted(filters) }); }
 export function useRoadmap(id: string) { return useQuery({ queryKey: [...key, id], queryFn: () => roadmapService.getById(id), enabled: Boolean(id) }); }

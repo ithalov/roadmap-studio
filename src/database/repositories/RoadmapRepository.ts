@@ -12,19 +12,23 @@ import { roadmapInputSchema, type RoadmapInput } from '@/schemas/database';
 import type { QueryResultRow, SqlBindValue, SqlExecutor } from '@/types/database';
 
 const orderBy: Record<RoadmapSort, string> = {
-  updated_desc: 'is_favorite DESC, updated_at DESC',
-  updated_asc: 'updated_at ASC',
-  title_asc: 'title COLLATE NOCASE ASC',
-  title_desc: 'title COLLATE NOCASE DESC',
+  updated_desc: 'roadmaps.is_favorite DESC, roadmaps.updated_at DESC',
+  updated_asc: 'roadmaps.updated_at ASC',
+  title_asc: 'roadmaps.title COLLATE NOCASE ASC',
+  title_desc: 'roadmaps.title COLLATE NOCASE DESC',
   progress_desc: 'progress DESC',
   progress_asc: 'progress ASC',
-  created_desc: 'created_at DESC',
+  created_desc: 'roadmaps.created_at DESC',
 };
 
 export class RoadmapRepository extends RepositoryBase<Roadmap> {
   constructor(database: SqlExecutor) {
     super(database, 'roadmaps');
   }
+  private readonly progressSelect =
+    'roadmaps.*, COALESCE(ROUND(100.0 * SUM(CASE WHEN t.completed = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(t.id), 0)), 0) AS progress';
+  private readonly progressJoins =
+    'LEFT JOIN phases p ON p.roadmap_id = roadmaps.id AND p.deleted_at IS NULL LEFT JOIN tasks t ON t.phase_id = p.id AND t.deleted_at IS NULL';
   protected mapRow(row: QueryResultRow): Roadmap {
     return {
       ...mapMeta(row),
@@ -35,28 +39,32 @@ export class RoadmapRepository extends RepositoryBase<Roadmap> {
       status: rowValue.string(row, 'status'),
       accentColor: rowValue.string(row, 'accent_color'),
       progressMode: rowValue.string(row, 'progress_mode'),
+      progress: rowValue.number(row, 'progress'),
       isFavorite: rowValue.boolean(row, 'is_favorite'),
     };
+  }
+  private selectWithProgress(where: string, orderByClause: string, limitClause = ''): string {
+    return `SELECT ${this.progressSelect} FROM roadmaps ${this.progressJoins} WHERE ${where} GROUP BY roadmaps.id ORDER BY ${orderByClause}${limitClause}`;
   }
   private filters(filters: RoadmapFilters, base: string): { sql: string; values: SqlBindValue[] } {
     const conditions: string[] = [base];
     const values: SqlBindValue[] = [];
     if (filters.query?.trim()) {
       conditions.push(
-        '(title LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE OR category LIKE ? COLLATE NOCASE OR version LIKE ? COLLATE NOCASE)',
+        '(roadmaps.title LIKE ? COLLATE NOCASE OR roadmaps.description LIKE ? COLLATE NOCASE OR roadmaps.category LIKE ? COLLATE NOCASE OR roadmaps.version LIKE ? COLLATE NOCASE)',
       );
       const query = `%${filters.query.trim()}%`;
       values.push(query, query, query, query);
     }
     if (filters.status) {
-      conditions.push('status = ?');
+      conditions.push('roadmaps.status = ?');
       values.push(filters.status);
     }
     if (filters.category) {
-      conditions.push('category = ?');
+      conditions.push('roadmaps.category = ?');
       values.push(filters.category);
     }
-    if (filters.favorite) conditions.push('is_favorite = 1');
+    if (filters.favorite) conditions.push('roadmaps.is_favorite = 1');
     return { sql: conditions.join(' AND '), values };
   }
   private async history(
@@ -86,7 +94,12 @@ export class RoadmapRepository extends RepositoryBase<Roadmap> {
   }
   public async create(value: RoadmapInput): Promise<Roadmap> {
     const input = roadmapInputSchema.parse(value);
-    const item: Roadmap = { ...input, ...newMeta(input.id, input.deviceId), isFavorite: false };
+    const item: Roadmap = {
+      ...input,
+      ...newMeta(input.id, input.deviceId),
+      progress: 0,
+      isFavorite: false,
+    };
     await this.database.execute(
       'INSERT INTO roadmaps (id,title,description,version,category,status,accent_color,progress_mode,created_at,updated_at,deleted_at,sync_status,local_version,server_version,device_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [
@@ -139,29 +152,40 @@ export class RoadmapRepository extends RepositoryBase<Roadmap> {
   }
   public async findRecent(limit: number): Promise<Roadmap[]> {
     return this.queryMany(
-      'SELECT roadmaps.*, 0 AS progress FROM roadmaps WHERE deleted_at IS NULL AND status != ? ORDER BY is_favorite DESC, updated_at DESC LIMIT ?',
+      `${this.selectWithProgress("roadmaps.deleted_at IS NULL AND roadmaps.status != ?", 'roadmaps.is_favorite DESC, roadmaps.updated_at DESC', ' LIMIT ?')}`,
       ['archived', limit],
     );
   }
   public async findActive(filters: RoadmapFilters = {}): Promise<Roadmap[]> {
-    const built = this.filters(filters, "deleted_at IS NULL AND status != 'archived'");
+    const built = this.filters(filters, "roadmaps.deleted_at IS NULL AND roadmaps.status != 'archived'");
     return this.queryMany(
-      `SELECT roadmaps.*, 0 AS progress FROM roadmaps WHERE ${built.sql} ORDER BY ${orderBy[filters.sort ?? 'updated_desc']}`,
+      `${this.selectWithProgress(built.sql, orderBy[filters.sort ?? 'updated_desc'])}`,
       built.values,
     );
   }
   public async findArchived(filters: RoadmapFilters = {}): Promise<Roadmap[]> {
-    const built = this.filters(filters, "deleted_at IS NULL AND status = 'archived'");
+    const built = this.filters(filters, "roadmaps.deleted_at IS NULL AND roadmaps.status = 'archived'");
     return this.queryMany(
-      `SELECT roadmaps.*, 0 AS progress FROM roadmaps WHERE ${built.sql} ORDER BY ${orderBy[filters.sort ?? 'updated_desc']}`,
+      `${this.selectWithProgress(built.sql, orderBy[filters.sort ?? 'updated_desc'])}`,
       built.values,
     );
   }
   public async findDeleted(filters: RoadmapFilters = {}): Promise<Roadmap[]> {
-    const built = this.filters(filters, 'deleted_at IS NOT NULL');
+    const built = this.filters(filters, 'roadmaps.deleted_at IS NOT NULL');
     return this.queryMany(
-      `SELECT roadmaps.*, 0 AS progress FROM roadmaps WHERE ${built.sql} ORDER BY deleted_at DESC`,
+      `${this.selectWithProgress(built.sql, 'roadmaps.deleted_at DESC')}`,
       built.values,
+    );
+  }
+  public async findById(id: string): Promise<Roadmap | null> {
+    return this.queryOne(
+      `${this.selectWithProgress('roadmaps.id = ? AND roadmaps.deleted_at IS NULL', 'roadmaps.id ASC')}`,
+      [id],
+    );
+  }
+  public async findAll(): Promise<Roadmap[]> {
+    return this.queryMany(
+      `${this.selectWithProgress('roadmaps.deleted_at IS NULL', 'roadmaps.created_at DESC')}`,
     );
   }
   public async search(query: string, filters: RoadmapFilters = {}): Promise<Roadmap[]> {

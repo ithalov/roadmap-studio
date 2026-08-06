@@ -13,7 +13,10 @@ export function useDeletedPhases(roadmapId: string) { return useQuery({ queryKey
 export function usePhaseHistory(id: string) { return useQuery({ queryKey: [...key, id, 'history'], queryFn: () => phaseService.history(id), enabled: Boolean(id) }); }
 export function usePhaseActions(roadmapId: string) {
   const client = useQueryClient();
-  const refresh = () => client.invalidateQueries({ queryKey: [...key, roadmapId] });
+  const refresh = () => {
+    client.invalidateQueries({ queryKey: [...key, roadmapId] });
+    client.invalidateQueries({ queryKey: ['roadmaps'] });
+  };
   return {
     create: useMutation({
       mutationFn: (v: PhaseFormValues) => phaseService.create(roadmapId, v),

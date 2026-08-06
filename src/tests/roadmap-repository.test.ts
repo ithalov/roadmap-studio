@@ -19,6 +19,7 @@ class RecordingDatabase implements SqlExecutor {
     _sql: string,
     _values: SqlBindValue[] = [],
   ): Promise<T[]> {
+    this.commands.push(_sql);
     return [];
   }
 }
@@ -34,5 +35,16 @@ describe('RoadmapRepository', () => {
     expect(database.commands.some((sql) => sql.startsWith('DELETE FROM task_tags'))).toBe(true);
     expect(database.commands.some((sql) => sql.startsWith('DELETE FROM tasks'))).toBe(true);
     expect(database.commands.some((sql) => sql.startsWith('DELETE FROM roadmaps'))).toBe(true);
+  });
+
+  it('loads roadmap progress from joined task completion data', async () => {
+    const database = new RecordingDatabase();
+
+    await new RoadmapRepository(database).findById('roadmap-1');
+
+    expect(database.commands[0]).toContain('AS progress');
+    expect(database.commands[0]).toContain('LEFT JOIN phases');
+    expect(database.commands[0]).toContain('LEFT JOIN tasks');
+    expect(database.commands[0]).toContain('GROUP BY roadmaps.id');
   });
 });

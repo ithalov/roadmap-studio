@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Columns3, Pencil, Presentation, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { categoryBadgeMeta, progressBadgeMeta, statusBadgeMeta } from '@/features/badges/constants/badge-catalog';
 import { useToast } from '@/components/feedback/useToast';
 import { RoadmapFormDialog } from '@/features/roadmap-management/components/RoadmapFormDialog';
 import { useRoadmap, useRoadmapActions } from '@/features/roadmap-management/hooks/useRoadmaps';
@@ -28,6 +30,9 @@ export function ProjectPage() {
   }
 
   const roadmap = result.data;
+  const category = categoryBadgeMeta(roadmap.category);
+  const status = statusBadgeMeta(roadmap.status);
+  const progress = progressBadgeMeta(roadmap.progress);
   const areas: Array<{ title: string; text: string; onOpen?: () => void }> = [
     { title: 'Fases', text: 'Organize fases e edite os detalhes do planejamento.', onOpen: () => navigate(`/project/${id}/editor`) },
     { title: 'Timeline', text: 'A timeline sera construida em uma fase futura.' },
@@ -42,6 +47,7 @@ export function ProjectPage() {
           <Button asChild size="sm" variant="ghost"><Link to="/projects"><ArrowLeft className="h-4 w-4" />Projetos</Link></Button>
           <h1 className="mt-3 text-3xl font-semibold">{roadmap.title}</h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">{roadmap.description || 'Sem descricao.'}</p>
+          <div className="mt-3 flex flex-wrap gap-1.5"><Badge variant="status" label={status.label} icon={status.icon} color={status.color} tooltip={status.tooltip} /><Badge variant="category" label={category.label} icon={category.icon} color={category.color} tooltip={category.tooltip} /><Badge label={`v${roadmap.version}`} tooltip={`Versao ${roadmap.version}`} /></div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" />Editar projeto</Button>
@@ -50,11 +56,26 @@ export function ProjectPage() {
           <Button disabled variant="outline"><Presentation className="h-4 w-4" />Apresentacao</Button>
         </div>
       </div>
+      <div className="rounded-lg border bg-card p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Progresso do projeto</p>
+            <p className="text-xs text-muted-foreground">Baseado nas tarefas concluidas.</p>
+          </div>
+          <Badge variant="progress" size="lg" label={progress.label} color={progress.color} tooltip={progress.tooltip} />
+        </div>
+        <div className="mt-3 h-3 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${roadmap.progress}%`, backgroundColor: roadmap.accentColor }}
+          />
+        </div>
+      </div>
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          ['Status', roadmapStatusLabels[roadmap.status as keyof typeof roadmapStatusLabels] ?? roadmap.status],
+          ['Status', status.label],
           ['Versao', roadmap.version],
-          ['Categoria', roadmap.category || 'Sem categoria'],
+          ['Categoria', category.label],
           ['Atualizado', new Date(roadmap.updatedAt).toLocaleDateString('pt-BR')],
         ].map(([label, value]) => <div className="rounded-lg border bg-card p-4" key={label}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 font-medium">{value}</p></div>)}
       </div>

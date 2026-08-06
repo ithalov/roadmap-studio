@@ -1,11 +1,10 @@
 import { Archive, Copy, Heart, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import type { Roadmap } from '@/database/models';
-import {
-  roadmapStatusLabels,
-  type RoadmapView,
-} from '@/features/roadmap-management/types/roadmap-management';
+import { categoryBadgeMeta, progressBadgeMeta, statusBadgeMeta } from '@/features/badges/constants/badge-catalog';
+import type { RoadmapView } from '@/features/roadmap-management/types/roadmap-management';
 
 interface Props {
   items: Roadmap[];
@@ -16,6 +15,7 @@ interface Props {
     item: Roadmap,
   ): void;
 }
+
 export function RoadmapCollection({ items, view, onEdit, onAction }: Props) {
   return (
     <div
@@ -26,6 +26,11 @@ export function RoadmapCollection({ items, view, onEdit, onAction }: Props) {
       }
     >
       {items.map((item) => (
+        (() => {
+          const category = categoryBadgeMeta(item.category);
+          const status = statusBadgeMeta(item.status);
+          const progress = progressBadgeMeta(item.progress);
+          return (
         <article
           key={item.id}
           className={
@@ -40,15 +45,24 @@ export function RoadmapCollection({ items, view, onEdit, onAction }: Props) {
               {item.title}
             </Link>
             <p className="truncate text-sm text-muted-foreground">
-              {item.description || 'Sem descrição'}
+              {item.description || 'Sem descricao'}
             </p>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span>
-                {roadmapStatusLabels[item.status as keyof typeof roadmapStatusLabels] ??
-                  item.status}
-              </span>
-              <span>{item.category || 'Sem categoria'}</span>
-              <span>{item.version}</span>
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Progresso</span>
+                <Badge variant="progress" size="sm" label={progress.label} color={progress.color} tooltip={progress.tooltip} />
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${item.progress}%`, backgroundColor: item.accentColor }}
+                />
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Badge variant="status" label={status.label} icon={status.icon} color={status.color} tooltip={status.tooltip} />
+              <Badge variant="category" label={category.label} icon={category.icon} color={category.color} tooltip={category.tooltip} />
+              <Badge variant="neutral" label={`v${item.version}`} tooltip={`Versao ${item.version}`} />
             </div>
           </div>
           <div className="flex gap-1">
@@ -102,6 +116,8 @@ export function RoadmapCollection({ items, view, onEdit, onAction }: Props) {
             </Button>
           </div>
         </article>
+          );
+        })()
       ))}
     </div>
   );

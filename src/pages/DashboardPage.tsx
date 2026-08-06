@@ -1,71 +1,48 @@
+import { useMemo, useState } from 'react';
+import { Bell, CheckCircle2, Clock3, FileJson, FolderArchive, FolderKanban, Gauge, Goal, Heart, LayoutDashboard, ListTodo, MoreHorizontal, Plus, Settings2, Sparkles, Star, Target, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { FolderKanban, ListTodo, Plus, TimerReset } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { RoadmapCollection } from '@/features/roadmap-management/components/RoadmapCollection';
-import {
-  useDashboardData,
-  useRoadmapActions,
-} from '@/features/roadmap-management/hooks/useRoadmaps';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { categoryBadgeMeta, priorityBadgeMeta, progressBadgeMeta, statusBadgeMeta } from '@/features/badges/constants/badge-catalog';
+import { useDashboardInsights } from '@/features/dashboard/hooks/useDashboardInsights';
+import { useDashboardModules } from '@/features/dashboard/hooks/useDashboardModules';
+import { dashboardModuleLabels, type DashboardPeriod } from '@/features/dashboard/types/dashboard';
+import { useDashboardData } from '@/features/roadmap-management/hooks/useRoadmaps';
+
+const periods: Array<{ value: DashboardPeriod; label: string }> = [{ value: 'today', label: 'Hoje' }, { value: 'week', label: 'Semana' }, { value: 'month', label: 'Mes' }, { value: 'year', label: 'Ano' }];
+const actionLabels: Record<string, string> = { roadmap_created: 'Criou roadmap', roadmap_updated: 'Editou roadmap', roadmap_favorited: 'Favoritou projeto', task_created: 'Criou tarefa', task_completed: 'Concluiu tarefa', task_updated: 'Editou tarefa', phase_created: 'Criou fase', phase_updated: 'Editou fase', kanban_task_moved: 'Moveu tarefa' };
+
+function ModuleCard({ title, description, children, className = '' }: { title: string; description?: string; children: React.ReactNode; className?: string }) {
+  return <Card className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${className}`}><CardHeader className="pb-3"><CardTitle className="text-base">{title}</CardTitle>{description ? <CardDescription>{description}</CardDescription> : null}</CardHeader><CardContent>{children}</CardContent></Card>;
+}
+
+function DashboardStats({ loading, values }: { loading: boolean; values: Array<{ label: string; value: number; icon: React.ElementType; description: string }> }) {
+  return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{values.map(({ label, value, icon: Icon, description }) => <Card className="transition-all duration-150 hover:scale-[1.02] hover:shadow-soft" key={label}><CardContent className="flex items-start justify-between p-4"><div><p className="text-2xl font-semibold tabular-nums">{loading ? '-' : value}</p><p className="mt-1 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-muted-foreground">{description}</p></div><span className="rounded-lg bg-primary/10 p-2 text-primary"><Icon className="h-4 w-4" /></span></CardContent></Card>)}</div>;
+}
+
+function ProductivityChart({ activity }: { activity: Array<{ date: string; count: number }> }) {
+  const byDate = new Map(activity.map((item) => [item.date, item.count]));
+  const days = Array.from({ length: 35 }, (_, index) => { const date = new Date(); date.setDate(date.getDate() - (34 - index)); const key = date.toISOString().slice(0, 10); return { key, count: byDate.get(key) ?? 0 }; });
+  return <div className="grid grid-cols-7 gap-1.5" aria-label="Atividade diaria dos ultimos 35 dias">{days.map(({ key, count }) => <span key={key} title={`${new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR')}: ${count} atividade(s)`} className={count >= 4 ? 'aspect-square rounded-sm bg-primary' : count >= 2 ? 'aspect-square rounded-sm bg-primary/65' : count ? 'aspect-square rounded-sm bg-primary/30' : 'aspect-square rounded-sm bg-muted'} />)}</div>;
+}
 
 export function DashboardPage() {
-  const dashboard = useDashboardData();
-  const actions = useRoadmapActions();
-  const stats = dashboard.data?.stats;
-  const cards = [
-    { label: 'Projetos', value: stats?.totalRoadmaps, icon: FolderKanban },
-    { label: 'Em andamento', value: stats?.activeRoadmaps, icon: TimerReset },
-    { label: 'Tarefas pendentes', value: stats?.pendingTasks, icon: ListTodo },
-  ];
-  return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground">Visão geral local</p>
-          <h1 className="text-2xl font-semibold">Seus roadmaps</h1>
-        </div>
-        <Button asChild>
-          <Link to="/projects">
-            <Plus className="h-4 w-4" />
-            Novo roadmap
-          </Link>
-        </Button>
-      </header>
-      <div className="grid gap-3 sm:grid-cols-3">
-        {cards.map(({ label, value, icon: Icon }) => (
-          <div className="rounded-lg border bg-card p-4" key={label}>
-            <Icon className="mb-3 h-4 w-4 text-muted-foreground" />
-            <p className="text-2xl font-semibold">{dashboard.isLoading ? '-' : (value ?? 0)}</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Atualizados recentemente</h2>
-        <Link className="text-sm text-primary hover:underline" to="/projects">
-          Ver todos
-        </Link>
-      </div>
-      {dashboard.error ? (
-        <p className="text-sm text-destructive">
-          Banco indisponível. Tente reiniciar o aplicativo.
-        </p>
-      ) : dashboard.data?.recent.length ? (
-        <RoadmapCollection
-          items={dashboard.data.recent}
-          view="grid"
-          onEdit={() => undefined}
-          onAction={(action, item) => {
-            if (action === 'favorite') actions.favorite.mutate(item.id);
-            if (action === 'duplicate') actions.duplicate.mutate(item.id);
-            if (action === 'archive') actions.archive.mutate(item.id);
-            if (action === 'delete') actions.softDelete.mutate(item.id);
-          }}
-        />
-      ) : (
-        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Seu primeiro roadmap começa aqui. Crie um projeto para organizar objetivos e fases.
-        </p>
-      )}
-    </section>
-  );
+  const [period, setPeriod] = useState<DashboardPeriod>('week');
+  const data = useDashboardData();
+  const insights = useDashboardInsights(period);
+  const modules = useDashboardModules();
+  const stats = data.data?.stats;
+  const info = insights.data;
+  const generalProgress = useMemo(() => info?.totalTasks ? Math.round((info.completedTasks / info.totalTasks) * 100) : 0, [info]);
+  const statCards = [{ label: 'Roadmaps', value: stats?.totalRoadmaps ?? 0, icon: FolderKanban, description: 'Projetos locais' }, { label: 'Em andamento', value: stats?.activeRoadmaps ?? 0, icon: Gauge, description: 'Em progresso agora' }, { label: 'Concluidos', value: stats?.completedRoadmaps ?? 0, icon: CheckCircle2, description: 'Metas finalizadas' }, { label: 'Favoritos', value: info?.favorites.length ?? 0, icon: Star, description: 'Acesso rapido' }, { label: 'Tarefas', value: info?.totalTasks ?? 0, icon: ListTodo, description: 'Registradas no workspace' }, { label: 'Arquivados', value: stats?.archivedRoadmaps ?? 0, icon: FolderArchive, description: 'Projetos preservados' }];
+  return <section className="mx-auto flex w-full max-w-7xl flex-col gap-5 pb-8"><header className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2 text-sm text-muted-foreground"><LayoutDashboard className="h-4 w-4" />Visao geral</div><h1 className="mt-2 text-3xl font-semibold">Dashboard</h1><p className="mt-1 text-muted-foreground">Bem-vindo de volta. Aqui esta o que importa agora.</p></div><div className="flex flex-wrap items-center gap-2"><div className="flex rounded-lg border bg-card p-1">{periods.map((item) => <Button size="sm" variant={period === item.value ? 'secondary' : 'ghost'} onClick={() => setPeriod(item.value)} key={item.value}>{item.label}</Button>)}</div><Button size="icon" variant="outline" aria-label="Notificacoes"><Bell className="h-4 w-4" /></Button><Button size="icon" variant="outline" aria-label="Perfil"><span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">RS</span></Button><Button asChild><Link to="/projects"><Plus className="h-4 w-4" />Novo roadmap</Link></Button></div></header>
+    <details className="rounded-lg border bg-card px-4 py-3"><summary className="cursor-pointer text-sm font-medium">Personalizar modulos</summary><div className="mt-3 flex flex-wrap gap-2">{(Object.keys(dashboardModuleLabels) as Array<keyof typeof dashboardModuleLabels>).map((module) => <Button key={module} size="sm" variant={modules.visible(module) ? 'secondary' : 'outline'} onClick={() => modules.toggle(module)}>{modules.visible(module) ? 'Ocultar' : 'Mostrar'} {dashboardModuleLabels[module]}</Button>)}</div></details>
+    {modules.visible('stats') ? <DashboardStats loading={data.isLoading || insights.isLoading} values={statCards} /> : null}
+    <div className="grid gap-4 lg:grid-cols-5">{modules.visible('progress') ? <ModuleCard title="Progresso geral" description="Baseado nas tarefas e subtarefas concluidas." className="lg:col-span-3"><div className="flex items-end justify-between"><div><p className="text-4xl font-semibold tabular-nums">{generalProgress}%</p><p className="mt-1 text-sm text-muted-foreground">do trabalho registrado concluido</p></div><Trophy className="h-8 w-8 text-primary" /></div><div className="mt-5 h-3 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${generalProgress}%` }} /></div><div className="mt-5 grid grid-cols-3 gap-3 text-sm"><div><p className="font-semibold">{stats?.completedRoadmaps ?? 0}/{stats?.totalRoadmaps ?? 0}</p><p className="text-xs text-muted-foreground">Roadmaps</p></div><div><p className="font-semibold">{info?.completedTasks ?? 0}/{info?.totalTasks ?? 0}</p><p className="text-xs text-muted-foreground">Tarefas</p></div><div><p className="font-semibold">{info?.completedSubtasks ?? 0}/{info?.totalSubtasks ?? 0}</p><p className="text-xs text-muted-foreground">Subtarefas</p></div></div></ModuleCard> : null}{modules.visible('actions') ? <ModuleCard title="Acoes rapidas" className="lg:col-span-2"><div className="grid gap-2"><Button asChild variant="secondary"><Link to="/projects"><Plus className="h-4 w-4" />Novo roadmap</Link></Button><Button asChild variant="outline"><Link to="/settings"><FileJson className="h-4 w-4" />Importar JSON</Link></Button><Button asChild variant="outline"><Link to="/settings"><Settings2 className="h-4 w-4" />Configuracoes</Link></Button></div></ModuleCard> : null}</div>
+    <div className="grid gap-4 xl:grid-cols-2">{modules.visible('recent') ? <ModuleCard title="Roadmaps recentes" description="Continue de onde parou."><div className="space-y-3">{info?.recent.map((roadmap) => { const category = categoryBadgeMeta(roadmap.category); const progress = progressBadgeMeta(roadmap.progress); return <div className="flex items-center gap-3" key={roadmap.id}><span className="h-8 w-1 rounded-full" style={{ backgroundColor: roadmap.accentColor }} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{roadmap.title}</p><div className="mt-1 flex flex-wrap gap-1"><Badge size="sm" variant="category" label={category.label} icon={category.icon} color={category.color} /><Badge size="sm" variant="progress" label={progress.label} color={progress.color} /></div></div><Button asChild size="sm" variant="ghost"><Link to={`/project/${roadmap.id}`}>Continuar</Link></Button></div>; }) ?? <p className="text-sm text-muted-foreground">Nenhum roadmap recente.</p>}</div></ModuleCard> : null}{modules.visible('favorites') ? <ModuleCard title="Favoritos" description="Projetos marcados para acesso rapido."><div className="space-y-3">{info?.favorites.map((roadmap) => { const category = categoryBadgeMeta(roadmap.category); const status = statusBadgeMeta(roadmap.status); return <Link className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted" to={`/project/${roadmap.id}`} key={roadmap.id}><Heart className="h-4 w-4 fill-current text-destructive" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{roadmap.title}</p><div className="mt-1 flex gap-1"><Badge size="sm" variant="category" label={category.label} color={category.color} /><Badge size="sm" variant="status" label={status.label} color={status.color} /></div></div><span className="text-sm font-semibold tabular-nums">{roadmap.progress}%</span></Link>; }) ?? <p className="text-sm text-muted-foreground">Nenhum favorito ainda.</p>}</div></ModuleCard> : null}</div>
+    <div className="grid gap-4 xl:grid-cols-5">{modules.visible('tasks') ? <ModuleCard title="Tarefas do dia" description="Ordenadas por prioridade e prazo." className="xl:col-span-3"><div className="space-y-2">{info?.tasks.map((task) => { const priority = priorityBadgeMeta(task.priority); return <Link to={`/project/${task.roadmapId}/kanban`} className="flex items-center gap-3 rounded-lg border border-transparent p-2 transition-colors hover:border-border hover:bg-muted" key={task.id}><span className="h-4 w-4 rounded border" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{task.title}</p><p className="truncate text-xs text-muted-foreground">{task.roadmapTitle} · {task.phaseTitle}</p></div><Badge size="sm" variant="priority" label={priority.label} color={priority.color} /></Link>; }) ?? <p className="text-sm text-muted-foreground">Nenhuma tarefa pendente.</p>}</div></ModuleCard> : null}{modules.visible('productivity') ? <ModuleCard title="Produtividade" description="Atividade registrada nos ultimos 35 dias." className="xl:col-span-2"><ProductivityChart activity={info?.productivity ?? []} /><div className="mt-3 flex items-center justify-between text-xs text-muted-foreground"><span>Menos</span><span>Mais atividade</span></div></ModuleCard> : null}</div>
+    <div className="grid gap-4 xl:grid-cols-2">{modules.visible('activity') ? <ModuleCard title="Atividade recente" description="Ultimas alteracoes no workspace."><div className="space-y-3">{info?.activity.slice(0, 6).map((item) => <Link to={item.roadmapId ? `/project/${item.roadmapId}` : '/projects'} className="flex gap-3 rounded-lg p-1 transition-colors hover:bg-muted" key={item.id}><Clock3 className="mt-0.5 h-4 w-4 text-primary" /><div className="min-w-0"><p className="text-sm"><span className="font-medium">{actionLabels[item.actionType] ?? 'Atualizou item'}</span> · {item.title}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(item.occurredAt).toLocaleString('pt-BR')} {item.roadmapTitle ? `· ${item.roadmapTitle}` : ''}</p></div></Link>) ?? <p className="text-sm text-muted-foreground">As proximas alteracoes aparecerao aqui.</p>}</div></ModuleCard> : null}{modules.visible('goals') ? <ModuleCard title="Metas da semana" description="Uma leitura simples para manter o ritmo."><div className="space-y-5">{[{ label: 'Concluir tarefas', value: info?.completedTasks ?? 0, total: Math.max(10, info?.totalTasks ?? 0), icon: Target }, { label: 'Concluir roadmaps', value: stats?.completedRoadmaps ?? 0, total: Math.max(3, stats?.totalRoadmaps ?? 0), icon: Goal }].map((goal) => { const percent = Math.min(100, Math.round((goal.value / goal.total) * 100)); const Icon = goal.icon; return <div key={goal.label}><div className="flex items-center justify-between text-sm"><span className="flex items-center gap-2 font-medium"><Icon className="h-4 w-4 text-primary" />{goal.label}</span><span className="tabular-nums text-muted-foreground">{goal.value}/{goal.total}</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${percent}%` }} /></div></div>; })}</div></ModuleCard> : null}</div>
+    {data.isError || insights.isError ? <p className="text-sm text-destructive">Nao foi possivel carregar todos os dados do Dashboard.</p> : null}
+  </section>;
 }

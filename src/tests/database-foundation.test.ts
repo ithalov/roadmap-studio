@@ -88,6 +88,25 @@ describe('database foundation', () => {
     expect(database.commands.some((sql) => sql.includes("sync_status='pending'"))).toBe(true);
   });
 
+  it('persists wallpaper preferences in app settings', async () => {
+    const database = new RecordingDatabase();
+    const settings = await new SettingsRepository(database).create({
+      deviceId: 'test-device',
+      theme: 'dark',
+      language: 'pt-BR',
+      accentColor: '#2563EB',
+      wallpaper: 'grid',
+      wallpaperIntensity: 3,
+      autosave: true,
+      backupInterval: 1440,
+      workspace: 'Roadmap Studio',
+    });
+
+    expect(settings.wallpaper).toBe('grid');
+    expect(settings.wallpaperIntensity).toBe(3);
+    expect(database.commands[0]).toContain('wallpaper_intensity');
+  });
+
   it('uses a logical deletion query', async () => {
     const database = new RecordingDatabase();
     await new RoadmapRepository(database).delete(roadmapId);

@@ -84,7 +84,10 @@ export function useKanbanSettings(roadmapId: string) {
 export function useKanbanActions(roadmapId: string, filters: KanbanFilters) {
   const client = useQueryClient();
   const boardKey = [...key, roadmapId, filters] as const;
-  const refresh = () => client.invalidateQueries({ queryKey: [...key, roadmapId] });
+  const refresh = () => {
+    client.invalidateQueries({ queryKey: [...key, roadmapId] });
+    client.invalidateQueries({ queryKey: ['roadmaps'] });
+  };
 
   return {
     move: useMutation({

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { syncStatuses } from '@/types/entity';
+import { wallpaperStyles, wallpaperIntensityValues } from '@/features/settings/types/wallpaper';
 
 export const entityMetaInputSchema = z.object({
   id: z.string().uuid().optional(),
@@ -59,6 +60,19 @@ export const settingsInputSchema = entityMetaInputSchema.extend({
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   language: z.enum(['pt-BR', 'en-US']).default('pt-BR'),
   accentColor: z.string().trim().min(1).max(32).default('#2563EB'),
+  wallpaper: z.enum(wallpaperStyles).default('none'),
+  wallpaperIntensity: z
+    .number()
+    .int()
+    .min(wallpaperIntensityValues[0])
+    .max(wallpaperIntensityValues[wallpaperIntensityValues.length - 1])
+    .default(2),
+  badgesShowIcons: z.boolean().default(true),
+  badgesShowBorder: z.boolean().default(true),
+  badgesShowShadow: z.boolean().default(false),
+  badgesColored: z.boolean().default(true),
+  badgesMinimal: z.boolean().default(false),
+  badgesShowTooltips: z.boolean().default(true),
   autosave: z.boolean().default(true),
   backupInterval: z.number().int().positive().default(1440),
   workspace: text(500).default(''),

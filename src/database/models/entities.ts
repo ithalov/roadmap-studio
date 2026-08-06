@@ -1,4 +1,6 @@
 import type { EntityMeta } from '@/types/entity';
+import type { WallpaperStyle } from '@/features/settings/types/wallpaper';
+import type { BadgePreferences } from '@/features/badges/types/badge';
 
 export interface Roadmap extends EntityMeta {
   title: string;
@@ -8,6 +10,7 @@ export interface Roadmap extends EntityMeta {
   status: string;
   accentColor: string;
   progressMode: string;
+  progress: number;
   isFavorite: boolean;
 }
 export interface Phase extends EntityMeta {
@@ -105,10 +108,12 @@ export interface HistoryEntry extends EntityMeta {
   occurredAt: string;
   userId: string | null;
 }
-export interface AppSettings extends EntityMeta {
+export interface AppSettings extends EntityMeta, BadgePreferences {
   theme: 'light' | 'dark' | 'system';
   language: 'pt-BR' | 'en-US';
   accentColor: string;
+  wallpaper: WallpaperStyle;
+  wallpaperIntensity: number;
   autosave: boolean;
   backupInterval: number;
   workspace: string;
