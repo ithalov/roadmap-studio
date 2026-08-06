@@ -65,6 +65,24 @@ export function SettingsPage() {
     setValues((current) => ({ ...current, [key]: value }));
   };
 
+  const persistBadgePreference = (
+    key: keyof Pick<SettingsFormValues, 'badgesShowIcons' | 'badgesShowBorder' | 'badgesShowShadow' | 'badgesColored' | 'badgesMinimal' | 'badgesShowTooltips'>,
+    value: boolean,
+  ) => {
+    const merged = { ...values, [key]: value };
+    setValues(merged);
+    queryClient.setQueryData<AppSettings | undefined>(settingsKey, (current) =>
+      current ? { ...current, [key]: value } : current,
+    );
+    save.mutate(merged, {
+      onError: (error) => {
+        setValues(values);
+        queryClient.invalidateQueries({ queryKey: settingsKey });
+        toast.show(readError(error), 'error');
+      },
+    });
+  };
+
   const persistWallpaper = (next: Partial<SettingsFormValues>) => {
     const previous = values;
     const merged = { ...previous, ...next };
@@ -208,7 +226,7 @@ export function SettingsPage() {
                     <p className="text-sm font-medium">{title}</p>
                     <p className="text-xs text-muted-foreground">{description}</p>
                   </div>
-                  <Switch checked={values[preference]} onCheckedChange={(checked) => update(preference, checked)} />
+                  <Switch checked={values[preference]} onCheckedChange={(checked) => persistBadgePreference(preference, checked)} />
                 </div>
               );
             })}

@@ -10,7 +10,11 @@ export const rowValue = {
   string,
   nullableString,
   number,
-  boolean: (row: QueryResultRow, key: string): boolean => number(row, key) === 1,
+  boolean: (row: QueryResultRow, key: string): boolean => {
+    const value = row[key];
+    if (value === true || value === 1 || value === '1' || value === 'true') return true;
+    return false;
+  },
 };
 
 export function mapMeta(row: QueryResultRow): EntityMeta {
