@@ -12,7 +12,15 @@ export function AppSidebar() {
   const collapsed = useUIStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const { t } = useTranslation();
-  const labels = [t('overview'), t('projects'), t('archived'), t('trash'), t('settings'), t('about')];
+  const labels = [
+    t('overview'),
+    t('projects'),
+    'Templates',
+    t('archived'),
+    t('trash'),
+    t('settings'),
+    t('about'),
+  ];
 
   return (
     <aside

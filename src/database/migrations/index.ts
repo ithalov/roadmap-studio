@@ -6,6 +6,7 @@ import { kanbanFoundationMigration } from '@/database/migrations/005-kanban-foun
 import { settingsWallpaperMigration } from '@/database/migrations/006-settings-wallpaper';
 import { settingsBadgesMigration } from '@/database/migrations/007-settings-badges';
 import { repairSettingsPreferencesMigration } from '@/database/migrations/008-repair-settings-preferences';
+import { templateLibraryMigration } from '@/database/migrations/009-template-library';
 import type { MigrationDefinition } from '@/database/migrations/migration-types';
 
 export const migrations: MigrationDefinition[] = [
@@ -17,5 +18,6 @@ export const migrations: MigrationDefinition[] = [
   settingsWallpaperMigration,
   settingsBadgesMigration,
   repairSettingsPreferencesMigration,
+  templateLibraryMigration,
 ];
 export type { MigrationDefinition } from '@/database/migrations/migration-types';

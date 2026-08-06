@@ -5,4 +5,5 @@ export { SubtaskRepository } from '@/database/repositories/SubtaskRepository';
 export { TagRepository } from '@/database/repositories/TagRepository';
 export { KanbanSettingsRepository } from '@/database/repositories/KanbanSettingsRepository';
 export { SettingsRepository } from '@/database/repositories/SettingsRepository';
+export { TemplateRepository } from '@/database/repositories/TemplateRepository';
 export { RepositoryBase } from '@/database/repositories/RepositoryBase';

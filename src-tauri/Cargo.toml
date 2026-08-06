@@ -1,6 +1,6 @@
 [package]
 name = "roadmap-studio"
-version = "0.1.15"
+version = "0.1.16"
 description = "Roadmap Studio"
 authors = ["Ithalo"]
 edition = "2021"

@@ -11,6 +11,7 @@ import { ProjectKanbanPage } from '@/pages/ProjectKanbanPage';
 import { ProjectPresentationPage } from '@/pages/ProjectPresentationPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { TemplatesPage } from '@/pages/TemplatesPage';
 
 export const router = createHashRouter([
   {
@@ -22,6 +23,7 @@ export const router = createHashRouter([
       { path: 'settings', element: <SettingsPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'projects', element: <ProjectsPage /> },
+      { path: 'templates', element: <TemplatesPage /> },
       { path: 'archived', element: <ArchivedPage /> },
       { path: 'trash', element: <TrashPage /> },
       { path: 'project/:id', element: <ProjectPage /> },

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Grid2X2, List, Plus, Search } from 'lucide-react';
+import { Grid2X2, LayoutTemplate, List, Plus, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { RoadmapCollection } from '@/features/roadmap-management/components/RoadmapCollection';
@@ -29,15 +30,23 @@ export function ProjectsPage() {
           <p className="text-sm text-muted-foreground">{t('localLibrary')}</p>
           <h1 className="text-2xl font-semibold">{t('projects')}</h1>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          {t('newRoadmap')}
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/templates">
+              <LayoutTemplate className="h-4 w-4" />
+              Usar template
+            </Link>
+          </Button>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            {t('newRoadmap')}
+          </Button>
+        </div>
       </header>
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[220px] flex-1">
@@ -66,7 +75,9 @@ export function ProjectsPage() {
           <List className="h-4 w-4" />
         </Button>
       </div>
-      <p className="text-sm text-muted-foreground">{result.data?.length ?? 0} {t('results')}</p>
+      <p className="text-sm text-muted-foreground">
+        {result.data?.length ?? 0} {t('results')}
+      </p>
       {result.isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando roadmaps...</p>
       ) : result.error ? (

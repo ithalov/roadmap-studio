@@ -130,3 +130,19 @@ export interface Backup extends EntityMeta {
   filePath: string;
   status: string;
 }
+
+export interface RoadmapTemplate extends EntityMeta {
+  name: string;
+  description: string;
+  category: string;
+  tags: string[];
+  coverImage: string | null;
+  icon: string | null;
+  color: string;
+  author: string;
+  version: string;
+  snapshotJson: string;
+  isFavorite: boolean;
+  usageCount: number;
+  lastUsedAt: string | null;
+}
